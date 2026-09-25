@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autómata 2D Generativo - Morfismo de Imágenes</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="libraries/p5.min.js"></script>
+    <script src="libraries/p5.sound.min.js"></script>
+  </head>
+  <body>
+    <!-- Botón flotante para abrir/cerrar controles si está oculto -->
+    <button id="btn-toggle-ui" class="ui-toggle-btn" title="Mostrar / Ocultar controles (Tecla H)">
+      CONTROLES
+    </button>
+
+    <!-- Overlay de Drag & Drop -->
+    <div id="drop-overlay" class="drop-overlay">
+      <div class="drop-content">
+        <div class="drop-icon">+</div>
+        <h2>Suelta tus archivos aquí</h2>
+        <p>Soporta imágenes (JPG, PNG, WebP), videos y audio</p>
+      </div>
+    </div>
+
+    <!-- Panel Lateral de Controles (Vidrio Esmerilado Tech Minimalista) -->
+    <aside id="ui-container" class="ui-panel ui-lateral">
+      <div class="ui-header">
+        <div class="title-wrap">
+          <span class="pulse-indicator"></span>
+          <h1>KREA VISION LAB <span class="version-tag">PRO</span></h1>
+        </div>
+        <button id="btn-close-ui" class="close-btn" title="Ocultar controles (Tecla H)">✕</button>
+      </div>
+
+      <!-- Badges de Estado -->
+      <div class="status-row">
+        <div class="status-badge" id="image-badge">Imágenes: 3</div>
+        <div class="midi-badge" id="midi-badge">MIDI: Desconectado</div>
+      </div>
+
+      <!-- Selector de Fuentes VJ -->
+      <div class="section-label">FUENTE DE ENTRADA</div>
+      <div class="source-nav">
+        <button id="src-images" class="src-btn active" title="Atajo: Tecla 1 o MIDI Do">Fotos</button>
+        <button id="src-camera" class="src-btn" title="Atajo: Tecla 2 o MIDI Re">Cámara</button>
+        <button id="src-video" class="src-btn" title="Atajo: Tecla 3 o MIDI Mi">Video</button>
+      </div>
+
+      <div class="source-actions">
+        <button id="btn-upload" class="btn-tech" title="Subir fotos">+ Fotos</button>
+        <input type="file" id="file-input" multiple accept="image/*" style="display: none;" />
+        <button id="btn-video-upload" class="btn-tech" title="Subir archivo de video">+ Video</button>
+        <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/ogg" style="display: none;" />
+        <button id="btn-next" class="btn-tech" title="Atajo: Espacio">Sig</button>
+      </div>
+
+      <!-- FX Performance Toggles (Luz Roja y Wave Deform) -->
+      <div class="section-label">EFECTOS EN VIVO (MANUAL / MIDI)</div>
+      <div class="fx-grid">
+        <button id="btn-red-light" class="fx-btn" title="Iluminación escénica roja (Atajo: R o MIDI Si)">
+          <span class="fx-led red-led"></span>
+          <span class="fx-text">Ilum. Roja</span>
+        </button>
+        <button id="btn-wave-toggle" class="fx-btn" title="Deformar imagen en ondas (Atajo: W o MIDI La)">
+          <span class="fx-led cyan-led"></span>
+          <span class="fx-text">Wave Deform</span>
+        </button>
+        <button id="btn-pause" class="fx-btn" title="Pausar / Reanudar (Atajo: P)">
+          <span class="fx-led blue-led"></span>
+          <span class="fx-text" id="pause-label">Pausa</span>
+        </button>
+      </div>
+
+      <!-- Sliders de Control Visual Manual & MIDI -->
+      <div class="section-label">PARÁMETROS VISUALES</div>
+      <div class="ui-sliders">
+        <div class="slider-group">
+          <label for="wave-slider">Deformación Onda: <span id="wave-val">0%</span></label>
+          <input type="range" id="wave-slider" min="0" max="100" step="5" value="0">
+        </div>
+        <div class="slider-group">
+          <label for="zoom-slider">Zoom Óptico: <span id="zoom-val">1.0x</span></label>
+          <input type="range" id="zoom-slider" min="1.0" max="3.0" step="0.1" value="1.0">
+        </div>
+        <div class="slider-group">
+          <label for="fusion-slider">Fusión de Elementos: <span id="fusion-val">0%</span></label>
+          <input type="range" id="fusion-slider" min="0" max="100" step="5" value="0">
+        </div>
+        <div class="slider-group">
+          <label for="decay-slider">Estela Persistente: <span id="decay-val">1.1</span></label>
+          <input type="range" id="decay-slider" min="0.04" max="2.5" step="0.02" value="1.1">
+        </div>
+        <div class="slider-group">
+          <label for="tint-slider">Tinte Cromático: <span id="tint-val">Neutro</span></label>
+          <input type="range" id="tint-slider" min="0" max="360" step="15" value="0">
+        </div>
+        <div class="slider-group">
+          <label for="warp-slider">Fluidez Líquida (Warp): <span id="warp-val">100%</span></label>
+          <input type="range" id="warp-slider" min="0" max="200" step="5" value="100">
+        </div>
+        <div class="slider-group">
+          <label for="brush-slider">Ancho de Pincel: <span id="brush-val">50px</span></label>
+          <input type="range" id="brush-slider" min="15" max="200" step="5" value="50">
+        </div>
+      </div>
+
+      <!-- Paleta de Color -->
+      <div class="section-label">PALETA DE COLOR</div>
+      <div class="color-palette-grid">
+        <button class="palette-chip active" data-mode="0">RGB</button>
+        <button class="palette-chip" data-mode="1">Neón</button>
+        <button class="palette-chip" data-mode="2">Fotocopia</button>
+        <button class="palette-chip" data-mode="3">B&N</button>
+        <button class="palette-chip" data-mode="4">Rayos X</button>
+      </div>
+
+      <!-- Sistema y Audio -->
+      <div class="section-label">AUDIO & PANTALLA</div>
+      <div class="audio-grid">
+        <button id="btn-sound" class="btn-tech-sub">Audio: <span id="sound-label">ON</span></button>
+        <button id="btn-audio-next" class="btn-tech-sub" title="Cambiar tema">Pista: <span id="audio-track-label">Dark Drone</span></button>
+        <button id="btn-audio-upload" class="btn-tech-sub" title="Cargar archivo de música (WAV, MP3, OGG)">+ Canción</button>
+        <input type="file" id="audio-file-input" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" style="display: none;" />
+        <button id="btn-res" class="btn-tech-sub">Nitidez: <span id="res-label">2px</span></button>
+        <button id="btn-fullscreen" class="btn-tech-sub" style="grid-column: span 2;">Pantalla Completa</button>
+      </div>
+
+      <div class="ui-tips">
+        <span><b>H</b>: Ocultar panel · <b>F</b>: Fullscreen · <b>R</b>: Ilum. Roja · <b>W</b>: Wave · <b>T</b>: Tinte</span>
+      </div>
+    </aside>
+
+    <!-- Indicador Flotante HUD para feedback de notas y tiras MIDI -->
+    <div id="midi-hud" class="midi-hud"></div>
+
+    <script src="sketch.js"></script>
+  </body>
+</html>
